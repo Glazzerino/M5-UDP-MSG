@@ -1,17 +1,15 @@
-/**
- * Utility class wrote for the FACES Keyboard module
- * **/
-#include<Wire.h>
+#pragma once
+#include <Wire.h>
 #include <string>
 class Keyboard {
     public:
         Keyboard();
+        bool available();
         uint8_t get_char();
-        const char* get_string();
-        void update();
-        const char* get_line();
+        std::string get_string();
     private:
-        std::string line ="";
-        const int KEY_INT = 5;
-        const uint8_t KEY_ADDR = 0x08;
+        std::string cached_string = "";
+        const int KEYBOARD_INT = 5;
+        const uint8_t KEYBOARD_ADDR = 0X08;
+        
 };
