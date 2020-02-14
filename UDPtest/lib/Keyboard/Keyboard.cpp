@@ -17,10 +17,13 @@ uint8_t Keyboard::get_char() {
         Wire.requestFrom(KEYBOARD_ADDR,1);
          while (Wire.available()) {
              data = Wire.read();
-             if (data !=0) {
-                 return data;  
-                 cached_string += (char)data;  
-         }
+            if (data != 0) {
+                return data;  
+                cached_string += (char)data;  
+            } else if (data == 0x0D) {
+                cached_string += '\n';
+                return data;
+            }
     }
 }
 
