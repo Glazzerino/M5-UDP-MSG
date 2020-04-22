@@ -15,8 +15,9 @@ use std::io::Write;
 #[allow(dead_code)]
 fn main() {
     
-//     * This code block gets the local ip automatically
-    //Windows specific obvipo
+// This code block gets the local ip automatically
+    //Windows specific 
+    let port = "8080";
     let ipcommand = Command::new("powershell")
         .args(&["/C","Get-WmiObject -Class Win32_NetworkAdapterConfiguration -Filter IPENABLED=TRUE | Select IPAddress"])
         .output()
@@ -28,16 +29,15 @@ fn main() {
         ip.push(ipcommand.stdout[i] as char);
     }
     ip.remove(0); // pops the "{"
-    let mut socket = UdpSocket::bind(ip.clone()+":8080");
+    let mut socket = UdpSocket::bind(ip.clone()+":"+port);
 
     if socket.is_ok() {
         println!("Port bind successful");
-        println!("UDP socket running \n Local IP: {}:8080",ip);
+        println!("UDP socket running \n Local IP: {}:{}",ip,port);
     } else {
         println!("Port could not be binded");
     }
     //Await M5 connection check-in
-
     //check_in(&socket.unwrap());
 
     let deploy_dir = Path::new("Deploy");
@@ -50,7 +50,9 @@ fn main() {
      } 
      let mut entries: Vec<String> = deploy_dir.read_dir()
         .unwrap()
-        .map(|entry| entry.unwrap().path().into_os_string().into_string().expect("File entry not parsable"))
+        .map(|entry| entry.unwrap().path()
+        .into_os_string().into_string()
+        .expect("File entry not parsable"))
         .collect();
 
     let deploy_file = select_file(&deploy_dir);
@@ -70,29 +72,38 @@ fn check_in(udp : &UdpSocket) {
 }
 
 fn select_file(deploy_dir : &Path) -> PathBuf {
-    
-    let mut option_bullet = 0;
     let mut input = String::new();
-    let entries: Vec<DirEntry> = deploy_dir.read_dir().expect("Deploy dir is empty!")
+    //creates file path vector for later selection use
+    let entries: Vec<DirEntry> = deploy_dir.read_dir().expect("Dir reading error!")
         .map(|entry| entry.expect("Could not get entry!"))
         .collect();
-    let mut selected_file = PathBuf::new();
-    let mut selection : Result<usize,std::num::ParseIntError>;
+    let mut selected_file_path = PathBuf::new();
+    let mut selection : Result<i32,std::num::ParseIntError>;
+    //input loop
     loop {
+        input.clear();
         println!("Please select a file to deploy: ");
+        //lists found files
         for (i,x) in entries.iter().enumerate() {
-            println!("{}) {}",i+1,x.path().into_os_string().into_string().unwrap().get_mut(deploy_dir.to_str().unwrap().len()+1.. ).unwrap());
+            println!("{}) {}",i+1,x.path()
+            .into_os_string()
+            .into_string()
+            .unwrap()
+            .get_mut(deploy_dir.to_str().unwrap().len()+1.. )
+            .unwrap());
         }
         io::stdin().read_line(&mut input).expect("Could not get user input");
-        selection = input.parse::<usize>();
+        println!("input : {}",input.clone());
+        selection = input.trim().parse();
+        println!("input {:?}", input);
         if selection.is_ok() {
-            if selection.clone().unwrap()<= entries.len() {
+            if selection.clone().unwrap() as usize <= entries.len() {
                 break;
             } 
         } else {
                 println!("Invalid selection. Try again");
             }
     }
-    selected_file = entries[selection.unwrap() - 1].path().to_path_buf();
-    return selected_file;
+    selected_file_path = entries[selection.unwrap() as usize - 1].path().to_path_buf();
+    return selected_file_path;
 }
